@@ -1,6 +1,7 @@
 import datetime as dt
 import configparser
 from pyspark.sql import SparkSession
+import pandas as pd
 from pyspark.sql.functions import udf
 from pyspark.sql.functions import col
 from pyspark.sql.types import StructType as R, StructField as Fld, DecimalType as Dsml, DoubleType as Dbl, StringType as Str, IntegerType as Int, DateType as Date, TimestampType as DateTime
@@ -33,8 +34,20 @@ def load_staging_tables():
 
     spark = SparkSession.builder.appName("capstone_project").getOrCreate()
 
+    countries_df = spark.read.csv('src_data/i94_sas_countries.txt', sep="=", header=True)
+    sparkdf_to_db(countries_df, db, schema, "countries", "overwrite", user, pw)
+
+    us_states_df = spark.read.csv('src_data/i94_sas_states.txt', sep="=", header=True)
+    sparkdf_to_db(us_states_df, db, schema, "us_states", "overwrite", user, pw)
+
     us_cities_demographics = spark.read.csv("src_data/us-cities-demographics.csv", sep=";", header=True)
     sparkdf_to_db(us_cities_demographics, db, schema, "us_cities_demographics", "overwrite", user, pw)
+
+    visa_category_dic = {'code': [1, 2, 3],
+                         'desc': ['Business', 'Pleasure', 'Student']}
+    visa_category_df = pd.DataFrame.from_dict(visa_category_dic)
+    visa_category_df = spark.createDataFrame(visa_category_df)
+    sparkdf_to_db(visa_category_df, db, schema, "visa_categories", "overwrite", user, pw)
 
     get_date = udf(lambda x: (dt.datetime(1960, 1, 1).date() + dt.timedelta(x)).isoformat() if x else None)
     sp_sas_data = spark.read.parquet("src_data/i94_sas_data")
@@ -78,7 +91,7 @@ def main():
     :return: none
     """
 
-    # load_staging_tables()
+    load_staging_tables()
     load_dwh_tables()
 
 
