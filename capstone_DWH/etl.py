@@ -6,7 +6,7 @@ from pyspark.sql.functions import udf
 from pyspark.sql.functions import col
 from pyspark.sql.types import StructType as R, StructField as Fld, DecimalType as Dsml, DoubleType as Dbl, StringType as Str, IntegerType as Int, DateType as Date, TimestampType as DateTime
 import psycopg2
-from capstone_DWH.sql_queries import create_dwh_tables, populate_dwh_tables
+from capstone_DWH.sql_queries import create_dwh_tables, populate_dwh_tables, drop_dwh_tables
 
 
 def sparkdf_to_db(pyspark_df, db, schema, table, mode, user, pw):
@@ -71,7 +71,7 @@ def load_staging_tables():
     sparkdf_to_db(sp_sas_data, db, schema, "i94", "overwrite", user, pw)
 
 
-def load_dwh_tables():
+def load_dwh_tables(refresh_tables):
     """
     to load fact and dimension tables from staging tables
     :param cur: an instance to execute database commands
@@ -90,6 +90,11 @@ def load_dwh_tables():
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(host, db, user, pw, port))
     cur = conn.cursor()
 
+    if refresh_tables:
+        for query in drop_dwh_tables:
+            cur.execute(query)
+            conn.commit()
+
     for query in create_dwh_tables:
         cur.execute(query)
         conn.commit()
@@ -107,7 +112,7 @@ def main():
     """
 
     load_staging_tables()
-    load_dwh_tables()
+    load_dwh_tables(False)
 
 
 if __name__ == "__main__":

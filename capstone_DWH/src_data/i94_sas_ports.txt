@@ -1,4 +1,4 @@
-code=Collapsed_code=name
+port_code=Collapsed_code=port_name
 ALC==ALCAN, AK             
 ANC==ANCHORAGE, AK         
 BAR==BAKER AAF - BAKER ISLAND, AK

@@ -1,4 +1,4 @@
-code=code_status=Name
+country_code=code_status=country_name
 582=VALID=MEXICO Air Sea, and Not Reported (I-94, no land arrivals)
 236=VALID=AFGHANISTAN
 101=VALID=ALBANIA
