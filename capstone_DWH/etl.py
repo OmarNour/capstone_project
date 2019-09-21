@@ -49,6 +49,21 @@ def load_staging_tables():
     visa_category_df = spark.createDataFrame(visa_category_df)
     sparkdf_to_db(visa_category_df, db, schema, "visa_categories", "overwrite", user, pw)
 
+    ports_df = spark.read.csv('src_data/i94_sas_ports.txt', sep="=", header=True)
+    sparkdf_to_db(ports_df, db, schema, "ports", "overwrite", user, pw)
+
+    port_mode_dic = {'code': [1, 2, 3, 9],
+                     'desc': ['Air', 'Sea', 'Land', 'Not reported']}
+    port_mode_df = pd.DataFrame.from_dict(port_mode_dic)
+    port_mode_df = spark.createDataFrame(port_mode_df)
+    sparkdf_to_db(port_mode_df, db, schema, "port_modes", "overwrite", user, pw)
+
+    gender_dic = {'code': ['M', 'F', 'O'],
+                  'desc': ['Male', 'Female', 'Others']}
+    gender_df = pd.DataFrame.from_dict(gender_dic)
+    gender_df = spark.createDataFrame(gender_df)
+    sparkdf_to_db(gender_df, db, schema, "gender", "overwrite", user, pw)
+
     get_date = udf(lambda x: (dt.datetime(1960, 1, 1).date() + dt.timedelta(x)).isoformat() if x else None)
     sp_sas_data = spark.read.parquet("src_data/i94_sas_data")
     sp_sas_data = sp_sas_data.withColumn("arrival_date", get_date(sp_sas_data.arrdate))
