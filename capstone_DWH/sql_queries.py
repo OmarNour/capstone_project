@@ -58,8 +58,8 @@ create_dim_countries = """ create table if not exists {dwh_schema}.dim_countries
                                                                                 ); """.format(dwh_schema=edw_schema)
 
 populate_dim_countries = """ 
- create temp table stage (like {dwh_schema}.dim_countries);
- insert into stage (select country_code, country_name from {stg_schema}.countries where code_status = 'VALID');
+create temp table stage (like {dwh_schema}.dim_countries);
+insert into stage (select country_code, country_name from {stg_schema}.countries where code_status = 'VALID');
  
 begin transaction;        
 delete from {dwh_schema}.dim_countries t 
@@ -83,6 +83,7 @@ create_dim_us_states = """ create table if not exists {dwh_schema}.dim_us_states
                                                                                 Total_Population    INTEGER,
                                                                                 Median_Age          decimal(5,2)
                                                                                 ); """.format(dwh_schema=edw_schema)
+
 populate_dim_us_states = """ 
 create temp table stage (like {dwh_schema}.dim_us_states);
 insert into stage (
@@ -111,6 +112,27 @@ end transaction;
 drop table stage;
 """.format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
-drop_dwh_tables = [drop_dim_date, drop_dim_countries, drop_dim_us_states]
-create_dwh_tables = [create_dim_date, create_dim_countries, create_dim_us_states]
-populate_dwh_tables = [populate_dim_date, populate_dim_countries, populate_dim_us_states]
+drop_dim_us_visa_categories = """ drop table {dwh_schema}.dim_visa_categories;""".format(dwh_schema=edw_schema)
+create_dim_us_visa_categories = """ create table if not exists {dwh_schema}.dim_visa_categories(cat_code   varchar(10), 
+                                                                                                    cat_desc    varchar(100)
+                                                                                                    ); """.format(dwh_schema=edw_schema)
+populate_dim_us_visa_categories = """ 
+create temp table stage (like {dwh_schema}.dim_visa_categories);
+insert into stage (select cat_code, cat_desc from {stg_schema}.visa_categories);
+ 
+begin transaction;        
+delete from {dwh_schema}.dim_visa_categories t 
+using stage 
+where t.cat_code = stage.cat_code;
+
+insert into {dwh_schema}.dim_visa_categories 
+select * from stage;
+
+end transaction;
+drop table stage; 
+""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
+
+
+drop_dwh_tables = [drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_us_visa_categories]
+create_dwh_tables = [create_dim_date, create_dim_countries, create_dim_us_states, create_dim_us_visa_categories]
+populate_dwh_tables = [populate_dim_date, populate_dim_countries, populate_dim_us_states, populate_dim_us_visa_categories]
