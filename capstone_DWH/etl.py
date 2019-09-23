@@ -111,8 +111,8 @@ def main():
     :return: none
     """
 
-    load_staging_tables()
-    load_dwh_tables(False)
+    # load_staging_tables()
+    load_dwh_tables(True)
 
 
 if __name__ == "__main__":

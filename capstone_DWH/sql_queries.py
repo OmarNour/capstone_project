@@ -112,11 +112,11 @@ end transaction;
 drop table stage;
 """.format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
-drop_dim_us_visa_categories = """ drop table {dwh_schema}.dim_visa_categories;""".format(dwh_schema=edw_schema)
-create_dim_us_visa_categories = """ create table if not exists {dwh_schema}.dim_visa_categories(cat_code   varchar(10), 
+drop_dim_visa_categories = """ drop table if exists {dwh_schema}.dim_visa_categories;""".format(dwh_schema=edw_schema)
+create_dim_visa_categories = """ create table if not exists {dwh_schema}.dim_visa_categories(cat_code   integer, 
                                                                                                     cat_desc    varchar(100)
                                                                                                     ); """.format(dwh_schema=edw_schema)
-populate_dim_us_visa_categories = """ 
+populate_dim_visa_categories = """ 
 create temp table stage (like {dwh_schema}.dim_visa_categories);
 insert into stage (select cat_code, cat_desc from {stg_schema}.visa_categories);
  
@@ -132,7 +132,99 @@ end transaction;
 drop table stage; 
 """.format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
+drop_dim_visa_types = """ drop table if exists {dwh_schema}.dim_visa_types; """.format(dwh_schema=edw_schema)
+create_dim_visa_types = """ create table if not exists {dwh_schema}.dim_visa_types(type_code varchar(10), type_desc varchar(100));""".format(dwh_schema=edw_schema)
+populate_dim_visa_types = """
+ create temp table stage (like {dwh_schema}.dim_visa_types);
+insert into stage (select distinct visatype from {stg_schema}.i94 where visatype is not null);
 
-drop_dwh_tables = [drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_us_visa_categories]
-create_dwh_tables = [create_dim_date, create_dim_countries, create_dim_us_states, create_dim_us_visa_categories]
-populate_dwh_tables = [populate_dim_date, populate_dim_countries, populate_dim_us_states, populate_dim_us_visa_categories]
+begin transaction;        
+delete from {dwh_schema}.dim_visa_types t 
+using stage 
+where t.type_code = stage.type_code;
+
+insert into {dwh_schema}.dim_visa_types 
+select * from stage;
+
+end transaction;
+drop table stage; """.format(dwh_schema=edw_schema, stg_schema=stg_schema)
+
+
+drop_dim_ports = """ drop table if exists {dwh_schema}.dim_ports; """.format(dwh_schema=edw_schema)
+create_dim_ports = """ create table if not exists {dwh_schema}.dim_ports(port_code varchar(10), port_name varchar(100));""".format(dwh_schema=edw_schema)
+populate_dim_ports = """
+ create temp table stage (like {dwh_schema}.dim_ports);
+insert into stage (select port_code, port_name from {stg_schema}.ports where Collapsed_code is null);
+ 
+begin transaction;        
+delete from {dwh_schema}.dim_ports t 
+using stage 
+where t.port_code = stage.port_code;
+
+insert into {dwh_schema}.dim_ports 
+select * from stage;
+
+end transaction;
+drop table stage; """.format(dwh_schema=edw_schema, stg_schema=stg_schema)
+
+drop_dim_port_modes = """ drop table if exists {dwh_schema}.dim_port_modes;""".format(dwh_schema=edw_schema)
+create_dim_port_modes = """ create table if not exists {dwh_schema}.dim_port_modes(mode_code varchar(10), mode_desc varchar(100));""".format(dwh_schema=edw_schema)
+populate_dim_port_modes = """
+ create temp table stage (like {dwh_schema}.dim_port_modes);
+insert into stage (select mode_code, mode_desc from {stg_schema}.port_modes);
+ 
+begin transaction;        
+delete from {dwh_schema}.dim_port_modes t 
+using stage 
+where t.mode_code = stage.mode_code;
+
+insert into {dwh_schema}.dim_port_modes 
+select * from stage;
+
+end transaction;
+drop table stage; """.format(dwh_schema=edw_schema, stg_schema=stg_schema)
+
+drop_dim_airlines = """ drop table if exists {dwh_schema}.dim_airlines;""".format(dwh_schema=edw_schema)
+create_dim_airlines = """ create table if not exists {dwh_schema}.dim_airlines(airline_code varchar(10));""".format(dwh_schema=edw_schema)
+populate_dim_airlines = """
+create temp table stage (like {dwh_schema}.dim_airlines);
+insert into stage (select distinct airline from {stg_schema}.i94 where airline is not null);
+ 
+begin transaction;        
+delete from {dwh_schema}.dim_airlines t 
+using stage 
+where t.airline_code = stage.airline_code;
+
+insert into {dwh_schema}.dim_airlines 
+select * from stage;
+
+end transaction;
+drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
+
+drop_dim_gender = """ drop table if exists {dwh_schema}.dim_gender;""".format(dwh_schema=edw_schema)
+create_dim_gender = """ create table if not exists {dwh_schema}.dim_gender(gender_code varchar(10), gender_desc varchar(100));""".format(dwh_schema=edw_schema)
+populate_dim_gender = """
+create temp table stage (like {dwh_schema}.dim_gender);
+insert into stage (select distinct gender_code,  gender_desc from {stg_schema}.gender);
+ 
+begin transaction;        
+delete from {dwh_schema}.dim_gender t 
+using stage 
+where t.gender_code = stage.gender_code;
+
+insert into {dwh_schema}.dim_gender 
+select * from stage;
+
+end transaction;
+drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
+
+
+##################################################################################################
+drop_dwh_tables = [drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_visa_categories, drop_dim_visa_types,
+                   drop_dim_ports, drop_dim_port_modes, drop_dim_airlines, drop_dim_gender]
+
+create_dwh_tables = [create_dim_date, create_dim_countries, create_dim_us_states, create_dim_visa_categories, create_dim_visa_types,
+                     create_dim_ports, create_dim_port_modes, create_dim_airlines, create_dim_gender]
+
+populate_dwh_tables = [populate_dim_date, populate_dim_countries, populate_dim_us_states, populate_dim_visa_categories, populate_dim_visa_types,
+                       populate_dim_ports, populate_dim_port_modes, populate_dim_airlines, populate_dim_gender]
