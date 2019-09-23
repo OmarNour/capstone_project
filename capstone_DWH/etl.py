@@ -68,6 +68,8 @@ def load_staging_tables():
     sp_sas_data = spark.read.parquet("src_data/i94_sas_data")
     sp_sas_data = sp_sas_data.withColumn("arrival_date", get_date(sp_sas_data.arrdate))
     sp_sas_data = sp_sas_data.withColumn("departure_date", get_date(sp_sas_data.depdate))
+    sp_sas_data = sp_sas_data.withColumn("due_date", get_date(sp_sas_data.depdate))
+
     sparkdf_to_db(sp_sas_data, db, schema, "i94", "overwrite", user, pw)
 
 
@@ -111,7 +113,7 @@ def main():
     :return: none
     """
 
-    # load_staging_tables()
+    load_staging_tables()
     load_dwh_tables(True)
 
 

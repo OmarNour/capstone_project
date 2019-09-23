@@ -218,6 +218,45 @@ select * from stage;
 end transaction;
 drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
+drop_f_i94 = """ drop table if exists {dwh_schema}.f_i94;""".format(dwh_schema=edw_schema)
+create_f_i94 = """
+ CREATE TABLE if not exists {dwh_schema}.f_i94
+(   cicid                       integer
+    admission_number 			integer,
+    count integer,
+    airline text,
+    flight_number text,
+    arrival_date date,
+    departure_date date,
+    due_date date,
+    gender text,
+    us_state text,
+    age integer,
+    birth_year integer,
+    country_citizenship integer,
+    country_residence integer,
+    port_mode integer,
+    i94_year integer,
+    i94_month integer,
+    port text,
+    visa_category integer,
+    visa_type text
+);""".format(dwh_schema=edw_schema)
+
+populate_f_i94 = """
+create temp table stage (like {dwh_schema}.dim_gender);
+insert into stage (select distinct gender_code,  gender_desc from {stg_schema}.gender);
+ 
+begin transaction;        
+delete from {dwh_schema}.dim_gender t 
+using stage 
+where t.gender_code = stage.gender_code;
+
+insert into {dwh_schema}.dim_gender 
+select * from stage;
+
+end transaction;
+drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
 ##################################################################################################
 drop_dwh_tables = [drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_visa_categories, drop_dim_visa_types,
