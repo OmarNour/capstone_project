@@ -14,7 +14,6 @@ create table if not exists {dwh_schema}.dim_date (
                                 year        integer                               
                                 );
 """).format(dwh_schema=edw_schema)
-
 populate_dim_date = ("""
 create temp table stage (like {dwh_schema}.dim_date);
 
@@ -32,9 +31,9 @@ into
             select gregorian_date
             from 
                 (
-                    select distinct TO_DATE(arrival_date, 'YYYY-MM-DD') gregorian_date from {stg_schema}.i94 
+                    select distinct TO_DATE(arrival_date, 'YYYY-MM-DD') gregorian_date from {stg_schema}.i94 where rejected = 0
                     union 
-                    select distinct TO_DATE(departure_date, 'YYYY-MM-DD') from {stg_schema}.i94 
+                    select distinct TO_DATE(departure_date, 'YYYY-MM-DD') from {stg_schema}.i94 where rejected = 0
                 ) x 
             where gregorian_date is not null 
         ) y
@@ -136,7 +135,7 @@ drop_dim_visa_types = """ drop table if exists {dwh_schema}.dim_visa_types; """.
 create_dim_visa_types = """ create table if not exists {dwh_schema}.dim_visa_types(type_code varchar(10), type_desc varchar(100));""".format(dwh_schema=edw_schema)
 populate_dim_visa_types = """
  create temp table stage (like {dwh_schema}.dim_visa_types);
-insert into stage (select distinct visatype from {stg_schema}.i94 where visatype is not null);
+insert into stage (select distinct visatype from {stg_schema}.i94 where rejected = 0 and visatype is not null);
 
 begin transaction;        
 delete from {dwh_schema}.dim_visa_types t 
@@ -188,7 +187,7 @@ drop_dim_airlines = """ drop table if exists {dwh_schema}.dim_airlines;""".forma
 create_dim_airlines = """ create table if not exists {dwh_schema}.dim_airlines(airline_code varchar(10));""".format(dwh_schema=edw_schema)
 populate_dim_airlines = """
 create temp table stage (like {dwh_schema}.dim_airlines);
-insert into stage (select distinct airline from {stg_schema}.i94 where airline is not null);
+insert into stage (select distinct airline from {stg_schema}.i94 where rejected = 0 and airline is not null);
  
 begin transaction;        
 delete from {dwh_schema}.dim_airlines t 
@@ -220,50 +219,89 @@ drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
 drop_f_i94 = """ drop table if exists {dwh_schema}.f_i94;""".format(dwh_schema=edw_schema)
 create_f_i94 = """
- CREATE TABLE if not exists {dwh_schema}.f_i94
-(   cicid                       integer
-    admission_number 			integer,
-    count integer,
-    airline text,
-    flight_number text,
-    arrival_date date,
-    departure_date date,
-    due_date date,
-    gender text,
-    us_state text,
-    age integer,
-    birth_year integer,
-    country_citizenship integer,
-    country_residence integer,
-    port_mode integer,
-    i94_year integer,
-    i94_month integer,
-    port text,
-    visa_category integer,
-    visa_type text
+CREATE TABLE if not exists  edw.f_i94
+(
+    sr_key                  varchar(1000) ,
+    count                   integer,
+    admission_number        double precision,
+    airline                 varchar(100) ,
+    flight_number           varchar(100) ,
+    arrival_date            date,
+    departure_date          date,
+    due_date                date,
+    gender                  varchar(100) ,
+    us_state                varchar(100) ,
+    age                     integer,
+    birth_year              integer,
+    country_citizenship     varchar(100),
+    country_residence       varchar(100),
+    port_mode               integer,
+    i94_year                integer,
+    i94_month               integer,
+    port                    varchar(100) ,
+    visa_category           integer,
+    visa_type               varchar(100) ,
+	primary key (sr_key)
 );""".format(dwh_schema=edw_schema)
 
 populate_f_i94 = """
-create temp table stage (like {dwh_schema}.dim_gender);
-insert into stage (select distinct gender_code,  gender_desc from {stg_schema}.gender);
+create temp table stage (like {dwh_schema}.f_i94);
+insert into stage 
+select 
+distinct
+admnum || i94port || i94mode || coalesce(airline, '') || coalesce(fltno, '') || arrdate || biryear || i94cit ||i94res sr_key
+, 1 count
+,admnum							admission_number
+,airline						airline					
+,fltno							flight_number
+,cast(arrival_date	as date)	arrival_date
+,cast(departure_date as date) 	departure_date			
+,cast(due_date	as date) 		due_date				
+,gender							gender					
+,i94addr						us_state				
+,i94bir							age
+,biryear						birth_year			
+,i94cit							country_citizenship 	
+,i94res							country_residence		
+,i94mode						port_mode				
+,i94yr							i94_year
+,i94mon							i94_month
+,i94port						port					
+,i94visa						visa_category			
+,visatype						visa_type							
+from {stg_schema}.i94
+where rejected = 0
+limit 110;
  
 begin transaction;        
-delete from {dwh_schema}.dim_gender t 
+delete from {dwh_schema}.f_i94 t 
 using stage 
-where t.gender_code = stage.gender_code;
+where t.sr_key = stage.sr_key;
 
-insert into {dwh_schema}.dim_gender 
+insert into {dwh_schema}.f_i94 
 select * from stage;
 
 end transaction;
 drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
+invalid_arrival_or_departure_date = """update {stg_schema}.i94 set rejected = 1 where  arrival_date > departure_date; """.format(stg_schema=stg_schema)
+invalid_cit_countries   = """update {stg_schema}.i94 i set rejected = 1 
+                            where  not exists (select 1 from {stg_schema}.countries c 
+                                                        where c.country_code = cast(i.i94cit as text) 
+                                                        and c.code_status <> 'VALID' 
+											); """
+invalid_res_countries   = """update {stg_schema}.i94 i set rejected = 1 
+                            where  not exists (select 1 from {stg_schema}.countries c 
+                                                        where c.country_code = cast(i.i94res as text) 
+                                                        and c.code_status <> 'VALID' 
+											); """
 ##################################################################################################
-drop_dwh_tables = [drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_visa_categories, drop_dim_visa_types,
+run_data_qailty = [invalid_arrival_or_departure_date, invalid_cit_countries, invalid_res_countries]
+drop_dwh_tables = [drop_f_i94, drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_visa_categories, drop_dim_visa_types,
                    drop_dim_ports, drop_dim_port_modes, drop_dim_airlines, drop_dim_gender]
 
-create_dwh_tables = [create_dim_date, create_dim_countries, create_dim_us_states, create_dim_visa_categories, create_dim_visa_types,
+create_dwh_tables = [create_f_i94, create_dim_date, create_dim_countries, create_dim_us_states, create_dim_visa_categories, create_dim_visa_types,
                      create_dim_ports, create_dim_port_modes, create_dim_airlines, create_dim_gender]
 
-populate_dwh_tables = [populate_dim_date, populate_dim_countries, populate_dim_us_states, populate_dim_visa_categories, populate_dim_visa_types,
+populate_dwh_tables = [populate_f_i94, populate_dim_date, populate_dim_countries, populate_dim_us_states, populate_dim_visa_categories, populate_dim_visa_types,
                        populate_dim_ports, populate_dim_port_modes, populate_dim_airlines, populate_dim_gender]

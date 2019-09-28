@@ -4,9 +4,10 @@ from pyspark.sql import SparkSession
 import pandas as pd
 from pyspark.sql.functions import udf
 from pyspark.sql.functions import col
+from pyspark.sql.functions import lit
 from pyspark.sql.types import StructType as R, StructField as Fld, DecimalType as Dsml, DoubleType as Dbl, StringType as Str, IntegerType as Int, DateType as Date, TimestampType as DateTime
 import psycopg2
-from capstone_DWH.sql_queries import create_dwh_tables, populate_dwh_tables, drop_dwh_tables
+from capstone_DWH.sql_queries import create_dwh_tables, run_data_qailty, populate_dwh_tables, drop_dwh_tables
 
 
 def sparkdf_to_db(pyspark_df, db, schema, table, mode, user, pw):
@@ -70,6 +71,15 @@ def load_staging_tables():
     sp_sas_data = sp_sas_data.withColumn("departure_date", get_date(sp_sas_data.depdate))
     sp_sas_data = sp_sas_data.withColumn("due_date", get_date(sp_sas_data.depdate))
 
+    sp_sas_data = sp_sas_data.withColumn("rejected", lit(0))
+
+    sp_sas_data.createOrReplaceTempView("i94")
+    countries_df.createOrReplaceTempView("countries")
+
+
+    # invalid_countries
+    # departure_date_less_than_arrival_date
+
     sparkdf_to_db(sp_sas_data, db, schema, "i94", "overwrite", user, pw)
 
 
@@ -97,6 +107,10 @@ def load_dwh_tables(refresh_tables):
             cur.execute(query)
             conn.commit()
 
+    for query in run_data_qailty:
+        cur.execute(query)
+        conn.commit()
+
     for query in create_dwh_tables:
         cur.execute(query)
         conn.commit()
@@ -113,7 +127,7 @@ def main():
     :return: none
     """
 
-    load_staging_tables()
+    # load_staging_tables()
     load_dwh_tables(True)
 
 
