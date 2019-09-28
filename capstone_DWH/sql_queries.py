@@ -297,6 +297,7 @@ invalid_res_countries   = """update {stg_schema}.i94 i set rejected = 1
 											); """
 ##################################################################################################
 run_data_qailty = [invalid_arrival_or_departure_date, invalid_cit_countries, invalid_res_countries]
+
 drop_dwh_tables = [drop_f_i94, drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_visa_categories, drop_dim_visa_types,
                    drop_dim_ports, drop_dim_port_modes, drop_dim_airlines, drop_dim_gender]
 
