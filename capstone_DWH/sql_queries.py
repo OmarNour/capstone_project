@@ -219,7 +219,7 @@ drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
 drop_f_i94 = """ drop table if exists {dwh_schema}.f_i94;""".format(dwh_schema=edw_schema)
 create_f_i94 = """
-CREATE TABLE if not exists  edw.f_i94
+CREATE TABLE if not exists  {dwh_schema}.f_i94
 (
     sr_key                  varchar(1000) ,
     count                   integer,
@@ -286,12 +286,12 @@ drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
 invalid_arrival_or_departure_date = """update {stg_schema}.i94 set rejected = 1 where  arrival_date > departure_date; """.format(stg_schema=stg_schema)
 invalid_cit_countries   = """update {stg_schema}.i94 i set rejected = 1 
-                            where  not exists (select 1 from {stg_schema}.countries c 
+                            where  exists (select 1 from {stg_schema}.countries c 
                                                         where c.country_code = cast(i.i94cit as text) 
                                                         and c.code_status <> 'VALID' 
 											); """
 invalid_res_countries   = """update {stg_schema}.i94 i set rejected = 1 
-                            where  not exists (select 1 from {stg_schema}.countries c 
+                            where  exists (select 1 from {stg_schema}.countries c 
                                                         where c.country_code = cast(i.i94res as text) 
                                                         and c.code_status <> 'VALID' 
 											); """
