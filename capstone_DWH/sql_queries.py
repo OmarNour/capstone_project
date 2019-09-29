@@ -284,19 +284,8 @@ select * from stage;
 end transaction;
 drop table stage;""".format(dwh_schema=edw_schema, stg_schema=stg_schema)
 
-invalid_arrival_or_departure_date = """update {stg_schema}.i94 set rejected = 1 where  arrival_date > departure_date; """.format(stg_schema=stg_schema)
-invalid_cit_countries = """update {stg_schema}.i94 i set rejected = 1 
-                            where  exists (select 1 from {stg_schema}.countries c 
-                                                        where c.country_code = cast(i.i94cit as text) 
-                                                        and c.code_status <> 'VALID' 
-											); """.format(stg_schema=stg_schema)
-invalid_res_countries = """update {stg_schema}.i94 i set rejected = 1 
-                            where  exists (select 1 from {stg_schema}.countries c 
-                                                        where c.country_code = cast(i.i94res as text) 
-                                                        and c.code_status <> 'VALID' 
-											); """.format(stg_schema=stg_schema)
 ##################################################################################################
-run_data_qailty = [invalid_arrival_or_departure_date, invalid_cit_countries, invalid_res_countries]
+
 
 drop_dwh_tables = [drop_f_i94, drop_dim_date, drop_dim_countries, drop_dim_us_states, drop_dim_visa_categories, drop_dim_visa_types,
                    drop_dim_ports, drop_dim_port_modes, drop_dim_airlines, drop_dim_gender]
