@@ -5,7 +5,6 @@ import pandas as pd
 from pyspark.sql.functions import udf
 from pyspark.sql.functions import col
 from pyspark.sql.functions import lit
-from pyspark.sql.types import StructType as R, StructField as Fld, DecimalType as Dsml, DoubleType as Dbl, StringType as Str, IntegerType as Int, DateType as Date, TimestampType as DateTime
 import psycopg2
 from capstone_DWH.sql_queries import create_dwh_tables, populate_dwh_tables, drop_dwh_tables
 from capstone_DWH.data_quality import run_data_qailty

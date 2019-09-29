@@ -24,19 +24,33 @@
     2.  **DWH layer**: here we have our data transformed ans sored in a star schema, ready to answer questions.
       
         - **Staging tables**:
-            1. **staging_events**: a copy from event log files,  
-                and because of the number of rows is small so we choose to make the distribution style "ALL".  
-            2. **staging_songs**: a copy from song log files
+            1. **i94**:  the table will be populated form SAS parquet files
+            2. **countries**: data extracted manually for the label file 
+            3. **gender**: data extracted manually for the label file
+            4. **ports**: data extracted manually for the label file
+            5. **port_modes**: data extracted manually for the label file
+            5. **us_cities_demographics**: combined from the label file and the dataset #2 mentioned above
+            6. **us_states**: data extracted manually for the label file
+            7. **visa_categories**: data extracted manually for the label file
         - **Fact table**:
-            1. **songplays**:
-        - **Dimension tables**:
-            1. **users**:
-            2. **songs**:
-            3. **artists**:
-            4. **time**
+            1. **f_i94**: cleaned data populated from i94 table from the staging area   
+        - **Dimension tables**:         
+            *all tables below populated from the staging tables*
+            1. **dim_airlines**
+            2. **dim_countries**
+            3. **dim_date**
+            4. **dim_gender**
+            5. **dim_port_modes**
+            6. **dim_ports**
+            7. **dim_us_states**
+            8. **dim_visa_categories**
+            9. **dim_visa_types**
         
 
 ## Addressing Other Scenarios:
--   **The data was increased by 100x:** 
+-   **The data was increased by 100x:**:    
+    DW to be moved to scalable DW in the cloud such as amazon redshift
 -   **The pipelines would be run on a daily basis by 7 am every day:**  
+    Airflow will handle our scheduling concerns   
 -   **The database needed to be accessed by 100+ people:**  
+    we need to define the common queries for so that we can choose the proper key to be used to distribute data among.
