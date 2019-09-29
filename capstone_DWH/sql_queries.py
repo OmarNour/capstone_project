@@ -271,7 +271,7 @@ admnum || i94port || i94mode || coalesce(airline, '') || coalesce(fltno, '') || 
 ,visatype						visa_type							
 from {stg_schema}.i94
 where rejected = 0
-limit 110;
+limit 200;
  
 begin transaction;        
 delete from {dwh_schema}.f_i94 t 
