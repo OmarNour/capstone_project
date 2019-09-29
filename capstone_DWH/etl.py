@@ -127,7 +127,7 @@ def main():
     :return: none
     """
 
-    # load_staging_tables()
+    load_staging_tables()
     load_dwh_tables(True)
 
 
