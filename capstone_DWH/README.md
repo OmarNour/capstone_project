@@ -46,6 +46,10 @@
             8. **dim_visa_categories**
             9. **dim_visa_types**
         
+## Running/loading to DWH steps:   
+1.  read data from source to staging area
+2.  run predefined quality rules on data in staging area
+3.  load cleaned data from staging area to our DWH db.
 
 ## Addressing Other Scenarios:
 -   **The data was increased by 100x:**:    

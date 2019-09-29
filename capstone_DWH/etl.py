@@ -11,6 +11,17 @@ from capstone_DWH.data_quality import run_data_qailty
 
 
 def sparkdf_to_db(pyspark_df, db, schema, table, mode, user, pw):
+    """
+    this method to save spark df to database table
+    :param pyspark_df: spark dataframe
+    :param db: database name
+    :param schema: schema name
+    :param table: table name
+    :param mode: override or replace
+    :param user: database user name
+    :param pw: database password
+    :return: nothing
+    """
     pyspark_df.write.jdbc("jdbc:postgresql:{}".format(db),
                           "{}.{}".format(schema, table),
                           mode="{}".format(mode),
@@ -20,10 +31,8 @@ def sparkdf_to_db(pyspark_df, db, schema, table, mode, user, pw):
 
 def load_staging_tables():
     """
-    to load staging tables from S3 bucket
-    :param cur: an instance to execute database commands
-    :param conn: a connection object that creates a connection to database
-    :return: none
+    load data from source to staging database
+    :return:
     """
     config = configparser.ConfigParser()
     config.read_file(open('dwh.cfg'))
@@ -76,19 +85,14 @@ def load_staging_tables():
     sp_sas_data.createOrReplaceTempView("i94")
     countries_df.createOrReplaceTempView("countries")
 
-
-    # invalid_countries
-    # departure_date_less_than_arrival_date
-
     sparkdf_to_db(sp_sas_data, db, schema, "i94", "overwrite", user, pw)
 
 
 def load_dwh_tables(refresh_tables):
     """
-    to load fact and dimension tables from staging tables
-    :param cur: an instance to execute database commands
-    :param conn: a connection object that creates a connection to database
-    :return: none
+    load data from staging area to DWH database
+    :param refresh_tables: drop and recreate DWH tables if True
+    :return:
     """
     config = configparser.ConfigParser()
     config.read_file(open('dwh.cfg'))
@@ -123,12 +127,12 @@ def load_dwh_tables(refresh_tables):
 
 def main():
     """
-    main method that calls load_staging_tables then insert_tables
+    main method that calls load_staging_tables then load_dwh_tables
     :return: none
     """
 
     load_staging_tables()
-    load_dwh_tables(True)
+    load_dwh_tables(False)
 
 
 if __name__ == "__main__":
